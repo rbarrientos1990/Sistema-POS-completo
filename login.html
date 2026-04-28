@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistema POS — Ingresar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Nunito',sans-serif}
+    html,body{width:100%;height:100%;overflow:hidden}
+
+    body{
+      min-height:100vh;
+      background:linear-gradient(180deg,#B8D4F0 0%,#D4E8FF 30%,#EEF5FF 55%,#C8DCF8 75%,#8AAED4 100%);
+      display:flex;align-items:center;justify-content:center;
+      position:relative;
+    }
+
+    /* Montañas SVG de fondo */
+    .mountains{
+      position:absolute;bottom:0;left:0;width:100%;
+      pointer-events:none;z-index:0;
+    }
+
+    /* Nubes suaves */
+    .clouds{position:absolute;top:0;left:0;width:100%;height:45%;pointer-events:none;z-index:0}
+    .cloud{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);filter:blur(18px)}
+
+    /* Blob orgánico contenedor */
+    .blob-card{
+      position:relative;z-index:10;
+      width:320px;height:410px;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .blob-svg{position:absolute;inset:0;width:100%;height:100%}
+
+    /* Contenido */
+    .card-content{
+      position:relative;z-index:10;width:100%;
+      padding:16px 34px 26px;
+      display:flex;flex-direction:column;align-items:center;
+    }
+
+    .avatar{
+      width:66px;height:66px;border-radius:50%;
+      background:rgba(100,150,220,.18);
+      border:3px solid rgba(150,190,255,.8);
+      box-shadow:0 6px 20px rgba(80,120,200,.18);
+      display:flex;align-items:center;justify-content:center;
+      margin-bottom:11px;
+    }
+    .avatar svg{width:30px;height:30px;fill:#4A7FD4}
+
+    .title{font-size:20px;font-weight:900;color:#1A3A6B;margin-bottom:2px;letter-spacing:-.2px}
+    .subtitle{font-size:9px;font-weight:800;color:rgba(70,110,180,.6);margin-bottom:20px;letter-spacing:.9px;text-transform:uppercase}
+
+    /* Error */
+    .error{
+      width:100%;background:rgba(200,60,60,.12);
+      border:1px solid rgba(200,80,80,.3);
+      border-radius:12px;padding:8px 12px;
+      font-size:12px;font-weight:800;color:#8B2020;
+      text-align:center;margin-bottom:10px;display:none;
+    }
+
+    /* Campos */
+    .field-wrap{
+      width:100%;display:flex;align-items:center;
+      background:rgba(255,255,255,.55);
+      border:1.5px solid rgba(150,190,255,.5);
+      border-radius:999px;padding:0 16px;margin-bottom:11px;
+      transition:all .2s;
+    }
+    .field-wrap:focus-within{
+      background:rgba(255,255,255,.8);
+      border-color:rgba(80,130,220,.6);
+      box-shadow:0 0 0 3px rgba(80,130,220,.12);
+    }
+    .field-icon{width:15px;height:15px;fill:rgba(80,130,200,.8);flex-shrink:0;margin-right:10px}
+    .field-wrap input{
+      flex:1;background:transparent;border:none;outline:none;
+      font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;
+      color:#1A3A6B;padding:12px 0;
+    }
+    .field-wrap input::placeholder{color:rgba(80,120,180,.5);font-weight:600}
+
+    /* Botón */
+    .btn-login{
+      width:78%;margin-top:6px;
+      padding:13px;background:#2B5FD4;color:#fff;
+      border:none;border-radius:999px;
+      font-size:14px;font-weight:900;
+      cursor:pointer;font-family:'Nunito',sans-serif;
+      letter-spacing:.6px;text-transform:uppercase;
+      box-shadow:0 8px 22px rgba(43,95,212,.3);
+      transition:all .2s;
+    }
+    .btn-login:hover{background:#1A4DB8;box-shadow:0 10px 28px rgba(43,95,212,.4);transform:translateY(-1px)}
+    .btn-login:active{transform:translateY(0)}
+    .btn-login:disabled{opacity:.65;cursor:not-allowed;transform:none}
+
+    .footer-txt{
+      margin-top:13px;font-size:10px;
+      color:rgba(50,90,160,.4);font-weight:700;
+      text-align:center;letter-spacing:.4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nubes -->
+  <div class="clouds">
+    <div class="cloud" style="width:280px;height:80px;top:8%;left:5%"></div>
+    <div class="cloud" style="width:200px;height:60px;top:15%;right:10%"></div>
+    <div class="cloud" style="width:160px;height:50px;top:5%;left:40%"></div>
+    <div class="cloud" style="width:120px;height:40px;top:22%;left:25%"></div>
+  </div>
+
+  <!-- Montañas -->
+  <svg class="mountains" viewBox="0 0 1440 420" preserveAspectRatio="xMidYMax slice" style="height:60%">
+    <!-- Montañas lejanas (más claras) -->
+    <path fill="rgba(140,180,230,0.3)" d="M0 420L200 200L380 310L540 160L700 280L860 120L1020 240L1180 140L1340 210L1440 160L1440 420Z"/>
+    <!-- Montañas medias -->
+    <path fill="rgba(100,145,200,0.28)" d="M0 420L160 250L300 330L460 190L620 300L780 150L940 270L1100 170L1260 240L1440 180L1440 420Z"/>
+    <!-- Montañas delanteras (más oscuras) -->
+    <path fill="rgba(70,110,170,0.22)" d="M0 420L120 310L260 360L420 270L580 350L740 240L900 330L1060 250L1220 310L1380 260L1440 290L1440 420Z"/>
+    <!-- Nieve en picos -->
+    <path fill="rgba(255,255,255,0.72)" d="M540 160L518 196L562 196Z"/>
+    <path fill="rgba(255,255,255,0.72)" d="M860 120L836 160L884 160Z"/>
+    <path fill="rgba(255,255,255,0.65)" d="M1180 140L1158 174L1202 174Z"/>
+    <path fill="rgba(255,255,255,0.6)" d="M200 200L182 232L218 232Z"/>
+    <path fill="rgba(255,255,255,0.55)" d="M700 280L684 308L716 308Z"/>
+    <!-- Lago reflejo abajo -->
+    <ellipse cx="720" cy="415" rx="320" ry="18" fill="rgba(180,215,255,0.35)"/>
+  </svg>
+
+  <!-- Blob con formulario -->
+  <div class="blob-card">
+    <svg class="blob-svg" viewBox="0 0 320 410">
+      <!-- Reflejo superior -->
+      <path fill="rgba(255,255,255,0.58)" d="M72 52 C102 30,160 24,202 42 C170 34,116 44,86 67Z"/>
+      <!-- Blob principal -->
+      <path
+        fill="rgba(255,255,255,0.52)"
+        stroke="rgba(150,190,255,0.65)"
+        stroke-width="1.5"
+        d="M160 18 C220 12,302 48,315 118 C328 188,318 268,292 325 C266 382,208 406,160 406 C112 406,54 382,28 325 C2 268,-8 188,5 118 C18 48,100 24,160 18Z"/>
+    </svg>
+
+    <div class="card-content">
+      <div class="avatar">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+      </div>
+
+      <div class="title">Sistema POS</div>
+      <div class="subtitle">Punto de venta · accesorios</div>
+
+      <div class="error" id="loginErr">Usuario o contraseña incorrectos</div>
+
+      <div class="field-wrap">
+        <svg class="field-icon" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        <input type="text" id="lu" placeholder="Usuario" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+
+      <div class="field-wrap">
+        <svg class="field-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.8-2.2-5-5-5S7 3.2 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.7 1.4-3.1 3.1-3.1 1.7 0 3.1 1.4 3.1 3.1v2z"/></svg>
+        <input type="password" id="lp" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">LOGIN</button>
+      <div class="footer-txt">Solo personal autorizado</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SB_URL = 'https://nzeyffpikcvhwwwmkezr.supabase.co'
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56ZXlmZnBpa2N2aHd3d21rZXpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNjM2OTEsImV4cCI6MjA5MjgzOTY5MX0.1u9rbak7vye1WxY5zTwfVLcxDBVl2hRyYMCsUsz13pw'
+    const db = window.supabase.createClient(SB_URL, SB_KEY)
+
+    // Si ya hay sesión activa, redirigir
+    const saved = localStorage.getItem('pos_sesion')
+    if (saved) {
+      try {
+        const s = JSON.parse(saved)
+        const perms = s.roles?.permisos || {}
+        if (perms.pos && !perms.dashboard) window.location.href = 'pos.html'
+        else window.location.href = 'admin.html'
+      } catch(e) { localStorage.removeItem('pos_sesion') }
+    }
+
+    async function doLogin() {
+      const u = document.getElementById('lu').value.trim()
+      const p = document.getElementById('lp').value
+      const err = document.getElementById('loginErr')
+      const btn = document.getElementById('btnLogin')
+
+      if (!u || !p) { err.textContent = 'Ingresá usuario y contraseña'; err.style.display = 'block'; return }
+
+      err.style.display = 'none'
+      btn.disabled = true
+      btn.textContent = 'Verificando...'
+
+      const { data, error } = await db
+        .from('usuarios')
+        .select('*, roles(*)')
+        .eq('usuario', u)
+        .eq('password', p)
+        .eq('activo', true)
+        .single()
+
+      if (error || !data) {
+        err.textContent = 'Usuario o contraseña incorrectos'
+        err.style.display = 'block'
+        btn.disabled = false
+        btn.textContent = 'LOGIN'
+        return
+      }
+
+      // Guardar sesión
+      localStorage.setItem('pos_sesion', JSON.stringify(data))
+
+      // Redirigir según permisos
+      const perms = data.roles?.permisos || {}
+      if (perms.pos && !perms.dashboard) {
+        window.location.href = 'pos.html'
+      } else {
+        window.location.href = 'admin.html'
+      }
+    }
+  </script>
+</body>
+</html>
