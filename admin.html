@@ -615,7 +615,7 @@
       <div class="dash-grid">
         <div class="mini-panel">
           <div class="mini-title">Ventas recientes</div>
-          <div class="tbl-wrap"><table><thead><tr><th>Hora</th><th>Total</th><th>Metodo</th><th>Detalle</th></tr></thead><tbody id="dashVentas"></tbody></table></div>
+          <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Hora</th><th>Total</th><th>Método</th><th>Acciones</th></tr></thead><tbody id="dashVentas"></tbody></table></div>
         </div>
         <div class="mini-panel">
           <div class="mini-title">Stock crítico</div>
@@ -990,7 +990,7 @@ function toast(msg, err = false) {
 
 function fmtFecha(f) { return f ? new Date(f).toLocaleDateString('es-GT', {day:'2-digit',month:'short',year:'numeric'}) : '—' }
 function fmtHora(f) { return f ? new Date(f).toLocaleTimeString('es-GT', {hour:'2-digit',minute:'2-digit'}) : '—' }
-function fmtQ(n) { return 'Q ' + Number(n||0).toFixed(2) }
+function fmtQ(n) { return (window._moneda || 'Q') + ' ' + Number(n||0).toFixed(2) }
 
 function cerrarModal(id) { document.getElementById(id).classList.remove('show') }
 function abrirModal(id) { document.getElementById(id).classList.add('show') }
@@ -1001,16 +1001,20 @@ async function cargarDashboard() {
   const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
   const inicioSem = new Date(hoy); inicioSem.setDate(hoy.getDate() - hoy.getDay())
 
-  const [rProd, rVentas, rMov] = await Promise.all([
+  const [rProd, rVentas, rMov, rSettings] = await Promise.all([
     db.from('productos').select('*'),
     db.from('ventas').select('*').order('created_at', {ascending:false}),
-    db.from('movimientos').select('*, productos(nombre)').order('created_at',{ascending:false})
+    db.from('movimientos').select('*, productos(nombre)').order('created_at',{ascending:false}),
+    db.from('settings').select('*').limit(1).maybeSingle()
   ])
 
+  const settings = rSettings.data || {}
+  window._moneda = settings.moneda || 'Q'
+  const stockMinimo = Number(settings.stock_minimo || 5)
   const prods = rProd.data || []
   const ventas = rVentas.data || []
   const agotados = prods.filter(p => p.stock <= 0).length
-  const stockBajo = prods.filter(p => p.stock > 0 && p.stock <= 5).length
+  const stockBajo = prods.filter(p => p.stock > 0 && p.stock <= stockMinimo).length
 
   const ventasHoy = ventas.filter(v => new Date(v.created_at) >= hoy)
   const ventasSem = ventas.filter(v => new Date(v.created_at) >= inicioSem)
@@ -1025,7 +1029,7 @@ async function cargarDashboard() {
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat s1"><div class="stat-icon">📦</div><div class="stat-label">Productos</div><div class="stat-val" style="color:var(--primary)">${prods.length}</div><div class="stat-help">En catálogo</div></div>
     <div class="stat s2"><div class="stat-icon">🧾</div><div class="stat-label">Ventas hoy</div><div class="stat-val" style="color:#3B6D11">${ventasHoy.length}</div><div class="stat-help">${fmtQ(totalHoy)}</div></div>
-    <div class="stat s3"><div class="stat-icon">⚠️</div><div class="stat-label">Stock bajo</div><div class="stat-val" style="color:#854F0B">${stockBajo}</div><div class="stat-help">5 o menos unidades</div></div>
+    <div class="stat s3"><div class="stat-icon">⚠️</div><div class="stat-label">Stock bajo</div><div class="stat-val" style="color:#854F0B">${stockBajo}</div><div class="stat-help">${stockMinimo} o menos unidades</div></div>
     <div class="stat s4"><div class="stat-icon">⛔</div><div class="stat-label">Agotados</div><div class="stat-val" style="color:var(--danger)">${agotados}</div><div class="stat-help">Sin stock</div></div>`
 
   document.getElementById('financeGrid').innerHTML = `
@@ -1033,10 +1037,16 @@ async function cargarDashboard() {
     <div class="fin-card"><div class="fin-label">Esta semana</div><div class="fin-val" style="color:#3B6D11">${fmtQ(totalSem)}</div><div class="fin-help">${ventasSem.length} transacciones</div></div>
     <div class="fin-card"><div class="fin-label">Este mes</div><div class="fin-val" style="color:var(--primary)">${fmtQ(totalMes)}</div><div class="fin-help">${ventasMes.length} transacciones</div></div>`
 
-  document.getElementById('dashVentas').innerHTML = ventas.slice(0,8).map(v => `
-    <tr><td style="font-size:11px;color:#888">${fmtHora(v.created_at)}</td><td style="font-weight:900;color:var(--primary)">${fmtQ(v.total)}</td><td><span class="badge b-purple">${v.metodo_pago}</span></td><td><button class="btn-sm btn-purple" onclick="verVenta('${v.id}')">Ver</button></td></tr>`).join('')
+  document.getElementById('dashVentas').innerHTML = ventas.slice(0,8).map((v, i) => `
+    <tr>
+      <td style="font-weight:900;color:var(--muted)">${i + 1}</td>
+      <td style="font-size:11px;color:#888">${fmtHora(v.created_at)}</td>
+      <td style="font-weight:900;color:var(--primary)">${fmtQ(v.total)}</td>
+      <td><span class="badge b-purple">${v.metodo_pago}</span></td>
+      <td><button class="btn-sm btn-purple" onclick="verVenta('${v.id}')">Ver</button></td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#888;padding:24px">No hay ventas recientes.</td></tr>'
 
-  document.getElementById('dashStock').innerHTML = prods.filter(p=>p.stock<=5).slice(0,6).map(p => `
+  document.getElementById('dashStock').innerHTML = prods.filter(p=>p.stock<=stockMinimo).slice(0,6).map(p => `
     <div class="status-item"><span>${p.nombre}</span><span class="status-count ${p.stock<=0?'b-danger':'b-warn'}">${p.stock<=0?'Agotado':p.stock+' uds.'}</span></div>`).join('') || '<div style="font-size:13px;color:var(--muted);padding:8px">Todo el inventario está saludable ✓</div>'
 }
 
