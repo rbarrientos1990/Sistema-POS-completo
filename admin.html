@@ -61,7 +61,7 @@
       gap:16px;
       box-shadow:18px 0 45px rgba(15,23,42,.12);
       z-index:100;
-      overflow:hidden;
+      overflow:visible;
     }
     .side-brand{
       display:flex;
@@ -151,6 +151,37 @@
     .tab.hidden{display:none}
     body.sidebar-collapsed .tab{justify-content:center;padding:12px 10px}
     body.sidebar-collapsed .tab span{display:none}
+
+    /* Tooltips cuando el menú está colapsado */
+    body.sidebar-collapsed .tab[data-tooltip]::after,
+    body.sidebar-collapsed .sidebar-toggle[data-tooltip]::after,
+    body.sidebar-collapsed .side-user[data-tooltip]::after{
+      content:attr(data-tooltip);
+      position:absolute;
+      left:calc(100% + 14px);
+      top:50%;
+      transform:translateY(-50%) translateX(-6px);
+      background:#0F172A;
+      color:#fff;
+      padding:9px 12px;
+      border-radius:12px;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      box-shadow:0 14px 34px rgba(15,23,42,.28);
+      transition:opacity .16s ease, transform .16s ease, visibility .16s ease;
+      z-index:500;
+    }
+    body.sidebar-collapsed .tab[data-tooltip]:hover::after,
+    body.sidebar-collapsed .sidebar-toggle[data-tooltip]:hover::after,
+    body.sidebar-collapsed .side-user[data-tooltip]:hover::after{
+      opacity:1;
+      visibility:visible;
+      transform:translateY(-50%) translateX(0);
+    }
 
     .side-user{
       border:1px solid rgba(255,255,255,.10);
@@ -533,22 +564,22 @@
         </div>
       </div>
 
-      <button class="sidebar-toggle" onclick="toggleSidebar()" title="Ocultar / mostrar menú">
+      <button class="sidebar-toggle" onclick="toggleSidebar()" title="Ocultar / mostrar menú" data-tooltip="Expandir menú">
         <span>☰</span><span class="toggle-text">Contraer menú</span>
       </button>
 
       <nav class="tabs" id="tabsBar">
-        <div class="tab active" onclick="setTab('dashboard',this)" data-perm="dashboard" data-icon="🏠"><span>Dashboard</span></div>
-        <div class="tab" onclick="setTab('ventas',this)" data-perm="ventas" data-icon="🧾"><span>Ventas</span></div>
-        <div class="tab" onclick="setTab('productos',this)" data-perm="productos" data-icon="📦"><span>Productos</span></div>
-        <div class="tab" onclick="setTab('categorias',this)" data-perm="categorias" data-icon="🏷️"><span>Categorías</span></div>
-        <div class="tab" onclick="setTab('inventario',this)" data-perm="inventario" data-icon="📊"><span>Inventario</span></div>
-        <div class="tab" onclick="setTab('usuarios',this)" data-perm="usuarios" data-icon="👥"><span>Usuarios</span></div>
-        <div class="tab" onclick="setTab('roles',this)" data-perm="roles" data-icon="🔐"><span>Roles</span></div>
-        <div class="tab" onclick="setTab('settings',this)" data-perm="dashboard" data-icon="⚙️"><span>Configuración</span></div>
+        <div class="tab active" onclick="setTab('dashboard',this)" data-perm="dashboard" data-icon="🏠" data-tooltip="Dashboard"><span>Dashboard</span></div>
+        <div class="tab" onclick="setTab('ventas',this)" data-perm="ventas" data-icon="🧾" data-tooltip="Ventas"><span>Ventas</span></div>
+        <div class="tab" onclick="setTab('productos',this)" data-perm="productos" data-icon="📦" data-tooltip="Productos"><span>Productos</span></div>
+        <div class="tab" onclick="setTab('categorias',this)" data-perm="categorias" data-icon="🏷️" data-tooltip="Categorías"><span>Categorías</span></div>
+        <div class="tab" onclick="setTab('inventario',this)" data-perm="inventario" data-icon="📊" data-tooltip="Inventario"><span>Inventario</span></div>
+        <div class="tab" onclick="setTab('usuarios',this)" data-perm="usuarios" data-icon="👥" data-tooltip="Usuarios"><span>Usuarios</span></div>
+        <div class="tab" onclick="setTab('roles',this)" data-perm="roles" data-icon="🔐" data-tooltip="Roles"><span>Roles</span></div>
+        <div class="tab" onclick="setTab('settings',this)" data-perm="dashboard" data-icon="⚙️" data-tooltip="Configuración"><span>Configuración</span></div>
       </nav>
 
-      <div class="side-user">
+      <div class="side-user" data-tooltip="Usuario activo">
         <div class="avatar">A</div>
         <div class="user-meta">
           <div class="user-name" id="sideUser">Administrador</div>
