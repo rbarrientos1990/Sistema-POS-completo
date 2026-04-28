@@ -16,7 +16,19 @@
     html,body{width:100%;overflow-x:hidden}
     body{background:#FAFAFF;color:var(--ink)}
 
-  
+    /* LOGIN */
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
     /* LAYOUT */
     .app{display:none;min-height:100vh}
     .topbar{background:#fff;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);box-shadow:0 8px 24px rgba(30,27,75,.06);position:sticky;top:0;z-index:80}
@@ -187,6 +199,7 @@
     <div class="tab" onclick="setTab('inventario',this)" data-perm="inventario">Inventario</div>
     <div class="tab" onclick="setTab('usuarios',this)" data-perm="usuarios">Usuarios</div>
     <div class="tab" onclick="setTab('roles',this)" data-perm="roles">Roles</div>
+    <div class="tab" onclick="setTab('settings',this)" data-perm="dashboard">⚙️ Configuración</div>
   </div>
 
   <div class="content">
@@ -304,6 +317,52 @@
           <thead><tr><th>Rol</th><th>Permisos activos</th><th>Usuarios asignados</th><th>Acciones</th></tr></thead>
           <tbody id="tablaRoles"></tbody>
         </table></div>
+      </div>
+    
+
+    <!-- SETTINGS -->
+    <div class="pane" id="pane-settings">
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">⚙️ Configuración del sistema</div>
+          <button class="btn-primary" onclick="guardarSettings()">Guardar cambios</button>
+        </div>
+        <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div>
+            <div style="font-size:14px;font-weight:900;color:var(--ink);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--line)">🏪 Información del negocio</div>
+            <div class="fg"><label>Nombre del negocio</label><input type="text" id="s-nombre" placeholder="Ej: Accesorios Mía"></div>
+            <div class="fg"><label>Dirección</label><input type="text" id="s-direccion" placeholder="Ej: Zona 10, Guatemala City"></div>
+            <div class="fg"><label>Teléfono</label><input type="text" id="s-telefono" placeholder="Ej: +502 5555-5555"></div>
+            <div class="fg"><label>NIT (opcional)</label><input type="text" id="s-nit" placeholder="Ej: 1234567-8"></div>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:900;color:var(--ink);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--line)">💳 Datos de pago</div>
+            <div class="fg"><label>Número de cuenta / Transferencia</label><input type="text" id="s-cuenta" placeholder="Ej: Banrural 123-456789-0"></div>
+            <div class="fg"><label>Titular de la cuenta</label><input type="text" id="s-titular" placeholder="Ej: María López"></div>
+            <div class="fg"><label>Banco</label><input type="text" id="s-banco" placeholder="Ej: Banrural, G&T Continental..."></div>
+            <div class="fg"><label>Pago digital (Tigo Money, Nequi, etc.)</label><input type="text" id="s-digital" placeholder="Ej: +502 5555-5555"></div>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:900;color:var(--ink);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--line)">🧾 Recibos y moneda</div>
+            <div class="fg"><label>Mensaje al pie del recibo</label><input type="text" id="s-mensaje" placeholder="Ej: ¡Gracias! No se aceptan devoluciones."></div>
+            <div class="fg"><label>Moneda</label>
+              <select id="s-moneda">
+                <option value="Q">Q — Quetzal (Guatemala)</option>
+                <option value="$">$ — Dólar</option>
+                <option value="L">L — Lempira (Honduras)</option>
+                <option value="C$">C$ — Córdoba (Nicaragua)</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:900;color:var(--ink);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--line)">📦 Inventario</div>
+            <div class="fg"><label>Alertar cuando stock sea menor o igual a</label><input type="number" id="s-stock-min" placeholder="5" min="1" max="50"></div>
+            <div style="background:#FFF4D8;border:1px solid #FAC775;border-radius:12px;padding:12px;margin-top:8px">
+              <div style="font-size:12px;font-weight:800;color:#854F0B;margin-bottom:4px">⚠️ Nota</div>
+              <div style="font-size:12px;color:#633806;font-weight:700">Los cambios se aplican en el POS y dashboard inmediatamente.</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -488,6 +547,7 @@ function setTab(tab, el) {
   if (tab === 'inventario') cargarMovimientos()
   if (tab === 'usuarios') cargarUsers()
   if (tab === 'roles') cargarRoles()
+  if (tab === 'settings') cargarSettings()
 }
 
 function toast(msg, err = false) {
@@ -944,7 +1004,6 @@ const saved = localStorage.getItem('pos_sesion')
 if (saved) {
   try {
     sesion = JSON.parse(saved)
-    // Verificar que tenga permisos de admin
     const perms = sesion.roles?.permisos || {}
     if (!perms.dashboard && !perms.productos && !perms.ventas) {
       window.location.href = 'login.html'
@@ -957,6 +1016,49 @@ if (saved) {
   }
 } else {
   window.location.href = 'login.html'
+}
+
+// ===== SETTINGS =====
+async function cargarSettings() {
+  const { data } = await db.from('settings').select('*').limit(1).maybeSingle()
+  if (!data) return
+  const campos = {
+    's-nombre':'nombre','s-direccion':'direccion','s-telefono':'telefono',
+    's-nit':'nit','s-cuenta':'cuenta_transferencia','s-titular':'titular',
+    's-banco':'banco','s-digital':'pago_digital','s-mensaje':'mensaje_recibo',
+    's-moneda':'moneda','s-stock-min':'stock_minimo'
+  }
+  Object.entries(campos).forEach(([elId, key]) => {
+    const el = document.getElementById(elId)
+    if (el && data[key]) el.value = data[key]
+  })
+}
+
+async function guardarSettings() {
+  const payload = {
+    nombre: document.getElementById('s-nombre').value.trim(),
+    direccion: document.getElementById('s-direccion').value.trim(),
+    telefono: document.getElementById('s-telefono').value.trim(),
+    nit: document.getElementById('s-nit').value.trim(),
+    cuenta_transferencia: document.getElementById('s-cuenta').value.trim(),
+    titular: document.getElementById('s-titular').value.trim(),
+    banco: document.getElementById('s-banco').value.trim(),
+    pago_digital: document.getElementById('s-digital').value.trim(),
+    mensaje_recibo: document.getElementById('s-mensaje').value.trim(),
+    moneda: document.getElementById('s-moneda').value,
+    stock_minimo: parseInt(document.getElementById('s-stock-min').value)||5,
+    updated_at: new Date().toISOString()
+  }
+  // Upsert — si existe actualiza, si no crea
+  const { data: existing } = await db.from('settings').select('id').limit(1).maybeSingle()
+  let error
+  if (existing) {
+    ({ error } = await db.from('settings').update(payload).eq('id', existing.id))
+  } else {
+    ({ error } = await db.from('settings').insert([payload]))
+  }
+  if (error) { toast('Error al guardar: ' + error.message, true); return }
+  toast('Configuración guardada correctamente ✓')
 }
 </script>
 </body>

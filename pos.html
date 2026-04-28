@@ -325,6 +325,25 @@
     .cambio-label{font-size:12px;color:#166534;font-weight:800}
     .cambio-val{font-size:14px;font-weight:900;color:#166534}
 
+    .transf-box{
+      background:var(--soft);border:1px solid var(--line);border-radius:10px;
+      padding:10px 12px;margin-bottom:10px;display:none;
+    }
+    .transf-box.show{display:block}
+    .transf-label{font-size:11px;color:var(--muted);font-weight:800;margin-bottom:4px}
+    .transf-hint{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px;font-style:italic}
+    .transf-input{
+      width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;
+      font-size:13px;font-family:'Nunito',sans-serif;font-weight:800;
+      color:var(--ink);outline:none;background:#fff;
+    }
+    .transf-input:focus{border-color:var(--primary)}
+    .transf-cuenta{
+      margin-top:8px;padding:8px 12px;
+      background:#EEF2FF;border:1px solid #C7D2FE;border-radius:8px;
+      font-size:11px;color:var(--primary-dark);font-weight:800;
+    }
+    .transf-cuenta span{font-size:13px;font-weight:900;display:block;margin-top:2px}
     .cobrar-btn{
       width:100%;padding:15px;
       background:linear-gradient(135deg,#16A34A,#15803D);
@@ -512,6 +531,16 @@
         </div>
       </div>
 
+      <!-- Transferencia -->
+      <div class="transf-box" id="transfBox">
+        <div class="transf-label">Referencia / No. de comprobante</div>
+        <input class="transf-input" type="text" id="transfRef"
+          placeholder="Ej: 00123456, referencia del banco...">
+        <div class="transf-cuenta" id="transfCuenta" style="display:none">
+          Transferir a:<span id="transfNroCuenta">Cargando...</span>
+        </div>
+      </div>
+
       <button class="cobrar-btn" id="btnCobrar" onclick="cobrar()" disabled>
         💰 Cobrar <span id="cobrarTotal">Q 0.00</span>
         <span class="cobrar-shortcut">F4</span>
@@ -600,10 +629,15 @@ function handleSearchKey(e) {
 
 // ===== CARGAR DATOS =====
 async function cargarDatos() {
-  const [rP, rC] = await Promise.all([
+  const [rP, rC, rS] = await Promise.all([
     db.from('productos').select('*, categorias(nombre)').order('nombre'),
-    db.from('categorias').select('*').order('nombre')
+    db.from('categorias').select('*').order('nombre'),
+    db.from('settings').select('*').limit(1).maybeSingle()
   ])
+  // Guardar settings globalmente
+  if (rS.data) {
+    window._settingsCuenta = rS.data.cuenta_transferencia || ''
+  }
   productos = rP.data || []
   categorias = rC.data || []
 
@@ -801,9 +835,27 @@ function selMetodo(m, el) {
   metodo = m
   document.querySelectorAll('.met-btn').forEach(b=>b.classList.remove('active'))
   el.classList.add('active')
-  const efBox = document.getElementById('efectivoBox')
-  efBox.classList.toggle('show', m==='efectivo')
-  if (m!=='efectivo') { document.getElementById('cambioBox').style.display='none'; document.getElementById('montoInput').value='' }
+  // Efectivo
+  document.getElementById('efectivoBox').classList.toggle('show', m==='efectivo')
+  if (m!=='efectivo') {
+    document.getElementById('cambioBox').style.display='none'
+    document.getElementById('montoInput').value=''
+  }
+  // Transferencia
+  const transfBox = document.getElementById('transfBox')
+  transfBox.classList.toggle('show', m==='transferencia')
+  if (m==='transferencia') {
+    document.getElementById('transfRef').value=''
+    // Mostrar número de cuenta si está configurado
+    const cuenta = window._settingsCuenta || ''
+    const cuentaDiv = document.getElementById('transfCuenta')
+    if (cuenta) {
+      document.getElementById('transfNroCuenta').textContent = cuenta
+      cuentaDiv.style.display='block'
+    } else {
+      cuentaDiv.style.display='none'
+    }
+  }
 }
 
 function calcCambio() {
@@ -827,8 +879,10 @@ async function cobrar() {
   btn.disabled=true; btn.innerHTML='⏳ Procesando...'
 
   try {
+    const transfRef = metodo==='transferencia' ? (document.getElementById('transfRef').value.trim()||null) : null
     const {data:ventaDB,error} = await db.from('ventas').insert([{
-      total, metodo_pago:metodo, monto_recibido:montoRec, cambio
+      total, metodo_pago:metodo, monto_recibido:montoRec, cambio,
+      referencia: transfRef
     }]).select().single()
     if (error) throw error
 
@@ -849,7 +903,8 @@ async function cobrar() {
       if (prod) prod.stock=nuevoStock
     }
 
-    ventaGuardada={items:[...venta],total,montoRec,cambio,fecha:new Date()}
+    const transfRefVal = metodo==='transferencia' ? (document.getElementById('transfRef').value.trim()||null) : null
+    ventaGuardada={items:[...venta],total,montoRec,cambio,fecha:new Date(),transfRef:transfRefVal}
     mostrarRecibo()
   } catch(e) {
     toast('Error al procesar la venta','warn')
