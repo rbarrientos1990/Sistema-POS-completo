@@ -265,7 +265,7 @@
       <div class="top-user-dot"></div>
       <span class="top-user-name" id="topUser">—</span>
     </div>
-    <button class="top-btn" onclick="irAdmin()">⚙️ Panel Admin</button>
+    <button class="top-btn" id="btnVolverDashboard" onclick="irAdmin()">← Dashboard</button>
     <button class="top-btn salir" onclick="doSalir()">↩ Salir</button>
   </div>
 </div>
@@ -284,7 +284,7 @@
       </div>
     </div>
     <div class="sidebar-footer">
-      <button class="btn-new-cat" onclick="irAdmin()">+ Nueva categoría</button>
+      <button class="btn-new-cat admin-only" onclick="irAdmin()">+ Nueva categoría</button>
       <div style="margin-top:8px;font-size:10px;color:var(--muted);font-weight:700;text-align:center" id="sideStats"></div>
     </div>
   </div>
@@ -304,7 +304,7 @@
       <div class="bstat-sep"></div>
       <div class="bstat"><span class="bstat-icon">⚠️</span><span class="bstat-val" id="bLow">0</span> Stock bajo</div>
       <div class="bstat-right">
-        <button class="btn-gestionar" onclick="irAdmin()">📋 Gestionar productos</button>
+        <button class="btn-gestionar admin-only" onclick="irAdmin()">📋 Gestionar productos</button>
       </div>
     </div>
   </div>
@@ -407,14 +407,28 @@ if (saved) {
     sesion = JSON.parse(saved)
     const perms = sesion.roles?.permisos || {}
     if (!perms.pos && !perms.ventas) window.location.href = 'login.html'
-    else document.getElementById('topUser').textContent = sesion.nombre
+    else {
+      document.getElementById('topUser').textContent = sesion.nombre
+      actualizarAccesosPOS()
+    }
   } catch(e) { window.location.href = 'login.html' }
 } else { window.location.href = 'login.html' }
 
-function irAdmin() {
+function tienePermisoAdmin() {
   const perms = sesion?.roles?.permisos || {}
-  if (perms.dashboard || perms.productos) window.location.href = 'admin.html'
-  else toast('Sin permisos para el panel admin', 'warn')
+  return ['dashboard','ventas','productos','categorias','inventario','usuarios','roles','settings'].some(p => perms[p])
+}
+
+function actualizarAccesosPOS() {
+  const puedeVolverAdmin = tienePermisoAdmin()
+  const btnDash = document.getElementById('btnVolverDashboard')
+  if (btnDash) btnDash.classList.toggle('admin-hidden', !puedeVolverAdmin)
+  document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('admin-hidden', !puedeVolverAdmin))
+}
+
+function irAdmin() {
+  if (tienePermisoAdmin()) window.location.href = 'admin.html'
+  else toast('Sin permisos para el panel administrativo', 'warn')
 }
 function doSalir() {
   localStorage.removeItem('pos_sesion')

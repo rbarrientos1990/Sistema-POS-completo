@@ -576,7 +576,7 @@
         <div class="tab" onclick="setTab('inventario',this)" data-perm="inventario" data-icon="📊" data-tooltip="Inventario"><span>Inventario</span></div>
         <div class="tab" onclick="setTab('usuarios',this)" data-perm="usuarios" data-icon="👥" data-tooltip="Usuarios"><span>Usuarios</span></div>
         <div class="tab" onclick="setTab('roles',this)" data-perm="roles" data-icon="🔐" data-tooltip="Roles"><span>Roles</span></div>
-        <div class="tab" onclick="setTab('settings',this)" data-perm="dashboard" data-icon="⚙️" data-tooltip="Configuración"><span>Configuración</span></div>
+        <div class="tab" onclick="setTab('settings',this)" data-perm="settings" data-icon="⚙️" data-tooltip="Configuración"><span>Configuración</span></div>
       </nav>
 
       <div class="side-user" data-tooltip="Usuario activo">
@@ -868,6 +868,7 @@
         <div class="perm-item"><span class="perm-name">Inventario</span><label class="toggle"><input type="checkbox" id="p-inventario"><span class="toggle-slider"></span></label></div>
         <div class="perm-item"><span class="perm-name">Usuarios</span><label class="toggle"><input type="checkbox" id="p-usuarios"><span class="toggle-slider"></span></label></div>
         <div class="perm-item"><span class="perm-name">Roles</span><label class="toggle"><input type="checkbox" id="p-roles"><span class="toggle-slider"></span></label></div>
+        <div class="perm-item"><span class="perm-name">Configuración</span><label class="toggle"><input type="checkbox" id="p-settings"><span class="toggle-slider"></span></label></div>
         <div class="perm-item"><span class="perm-name">Acceso al POS</span><label class="toggle"><input type="checkbox" id="p-pos"><span class="toggle-slider"></span></label></div>
       </div>
     </div>
@@ -898,7 +899,7 @@ const SB_URL = 'https://nzeyffpikcvhwwwmkezr.supabase.co'
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56ZXlmZnBpa2N2aHd3d21rZXpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNjM2OTEsImV4cCI6MjA5MjgzOTY5MX0.1u9rbak7vye1WxY5zTwfVLcxDBVl2hRyYMCsUsz13pw'
 const db = window.supabase.createClient(SB_URL, SB_KEY)
 
-const PERMS = ['dashboard','ventas','productos','categorias','inventario','usuarios','roles','pos']
+const PERMS = ['dashboard','ventas','productos','categorias','inventario','usuarios','roles','settings','pos']
 
 let sesion = null
 let cacheProductos = [], cacheCats = [], cacheRoles = [], cacheUsers = [], cacheVentas = [], cacheMovs = []
@@ -933,11 +934,27 @@ function iniciarApp() {
 
 function aplicarPermisos() {
   const perms = sesion.roles?.permisos || {}
-  document.querySelectorAll('.tab[data-perm]').forEach(tab => {
+  const tabs = [...document.querySelectorAll('.tab[data-perm]')]
+
+  tabs.forEach(tab => {
     const perm = tab.dataset.perm
-    if (perm === 'dashboard' || perms[perm]) tab.classList.remove('hidden')
+    if (perms[perm]) tab.classList.remove('hidden')
     else tab.classList.add('hidden')
   })
+
+  const activeTab = document.querySelector('.tab.active')
+  const firstAllowed = tabs.find(tab => !tab.classList.contains('hidden'))
+
+  if (!firstAllowed) {
+    toast('No tenés permisos para acceder al panel administrativo', true)
+    setTimeout(() => { window.location.href = (perms.pos ? 'pos.html' : 'login.html') }, 900)
+    return
+  }
+
+  if (!activeTab || activeTab.classList.contains('hidden')) {
+    const paneName = firstAllowed.getAttribute('onclick').match(/setTab\('([^']+)'/)?.[1] || 'dashboard'
+    setTab(paneName, firstAllowed)
+  }
 }
 
 function doLogout() {
@@ -1419,8 +1436,9 @@ if (saved) {
   try {
     sesion = JSON.parse(saved)
     const perms = sesion.roles?.permisos || {}
-    if (!perms.dashboard && !perms.productos && !perms.ventas) {
-      window.location.href = 'login.html'
+    const adminPerms = ['dashboard','ventas','productos','categorias','inventario','usuarios','roles','settings']
+    if (!adminPerms.some(p => perms[p])) {
+      window.location.href = perms.pos ? 'pos.html' : 'login.html'
     } else {
       iniciarApp()
     }
@@ -1433,7 +1451,21 @@ if (saved) {
 }
 
 // ===== SETTINGS =====
+function tienePermiso(permiso) {
+  return !!(sesion?.roles?.permisos || {})[permiso]
+}
+
+function protegerPermiso(permiso, mensaje = 'No tenés permisos para realizar esta acción') {
+  if (!tienePermiso(permiso)) {
+    toast(mensaje, true)
+    return false
+  }
+  return true
+}
+
 async function cargarSettings() {
+  if (!protegerPermiso('settings', 'No tenés permisos para ver la configuración del sistema')) return
+
   const { data } = await db.from('settings').select('*').limit(1).maybeSingle()
   if (!data) return
   const campos = {
@@ -1449,6 +1481,7 @@ async function cargarSettings() {
 }
 
 async function guardarSettings() {
+  if (!protegerPermiso('settings', 'No tenés permisos para modificar la configuración del sistema')) return
   const payload = {
     nombre: document.getElementById('s-nombre').value.trim(),
     direccion: document.getElementById('s-direccion').value.trim(),
